@@ -4,7 +4,7 @@
 
 constexpr unsigned WINDOW_WIDTH = 800;
 constexpr unsigned WINDOW_HEIGHT = 600;
-sf::Vector2f speed[5] = {{20.f, 80.f}, {24.f, 32.f}, {50.f, 50.f}, {100.f, 0.f}, {32.f, 42.f}};
+sf::Vector2f speed[5] = {{20.f, 80.f}, {30.f, 40.f}, {50.f, 60.f}, {100.f, 10.f}, {70.f, 30.f}};
 unsigned int circleColor[5][3] = {{255, 255, 0}, {255, 0, 243}, {0, 255, 255}, {0, 128, 0}, {234, 12, 56}};
 
 void update(std::vector<sf::CircleShape> &circles, sf::Clock &clock)

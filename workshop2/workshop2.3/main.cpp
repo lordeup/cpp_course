@@ -4,7 +4,6 @@
 
 constexpr unsigned WINDOW_WIDTH = 800;
 constexpr unsigned WINDOW_HEIGHT = 600;
-unsigned int circleColor[5][3] = {{255, 255, 0}, {255, 0, 243}, {0, 255, 255}, {0, 128, 0}, {234, 12, 56}};
 std::vector<sf::CircleShape> circles;
 std::vector<sf::Vector2f> speed;
 
@@ -64,9 +63,11 @@ int main()
         speed.push_back({float(rand() % 100), float(rand() % 100)});
         circles.push_back(sf::CircleShape(20.f));
         circles[i].setPosition({float(rand() % 700), float(rand() % 500)});
-        circles[i].setFillColor(sf::Color(circleColor[i][1], circleColor[i][2], circleColor[i][3]));
+        const int color1 = (rand() % 254);
+        const int color2 = (rand() % 254);
+        const int color3 = (rand() % 254);
+        circles[i].setFillColor(sf::Color(color1, color2, color3));
     }
-
     while (window.isOpen())
     {
         pollEvents(window, circles);

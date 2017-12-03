@@ -4,7 +4,6 @@
 
 void onMousePressed(const sf::Event::MouseButtonEvent &event, std::vector<sf::CircleShape> &circles, std::vector<sf::Vector2f> &speed)
 {
-    std::cout << "mouse x=" << event.x << ", y=" << event.y << std::endl;
     circles.push_back(sf::CircleShape(20.f));
     speed.push_back({float(rand() % 100), float(rand() % 100)});
     circles.back().setPosition({(float(event.x) - 20),

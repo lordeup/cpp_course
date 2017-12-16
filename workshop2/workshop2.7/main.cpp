@@ -29,7 +29,7 @@ bool IsNeedToRemove(Drawing &Circle)
 
 void initGenerator(PRNG &generator)
 {
-    const unsigned seed = unsigned(time(nullptr));
+    const unsigned seed = time(nullptr);
     generator.engine.seed(seed);
 }
 
@@ -105,41 +105,46 @@ void pollEvents(RenderWindow &window, vector<Drawing> &Balls, PRNG &generator)
 void update(vector<Drawing> &Balls, Clock &clock)
 {
     float dt = clock.restart().asSeconds();
-    for (size_t i = 0; i < Balls.size(); ++i)
-    {
-        Balls[i].time = Balls[i].time + dt;
-    }
-    auto newEnd = remove_if(Balls.begin(), Balls.end(), IsNeedToRemove);
-    Balls.erase(newEnd, Balls.end());
-    for (size_t i = 0; i < Balls.size(); ++i)
+    dt = dt * 0.2;
+    for (size_t k = 0; k < 5; k++)
     {
 
-        if ((Balls[i].circles.getPosition().x < 0) || (Balls[i].circles.getPosition().x > 760))
+        for (size_t i = 0; i < Balls.size(); ++i)
         {
-            Balls[i].speed.x = -Balls[i].speed.x;
+            Balls[i].time = Balls[i].time + dt;
         }
-        if ((Balls[i].circles.getPosition().y < 0) || (Balls[i].circles.getPosition().y > 560))
+        auto newEnd = remove_if(Balls.begin(), Balls.end(), IsNeedToRemove);
+        Balls.erase(newEnd, Balls.end());
+        for (size_t i = 0; i < Balls.size(); ++i)
         {
-            Balls[i].speed.y = -Balls[i].speed.y;
-        }
-        Balls[i].circles.setPosition(Balls[i].circles.getPosition() + Balls[i].speed * dt);
-    }
-    for (size_t fi = 0; fi < Balls.size(); ++fi)
-    {
-        for (size_t si = fi + 1; si < Balls.size(); ++si)
-        {
-            const Vector2f deltaPos = Balls[fi].circles.getPosition() - Balls[si].circles.getPosition();
-            float distance = hypotf(deltaPos.x, deltaPos.y);
-            if (distance <= 40)
+
+            if ((Balls[i].circles.getPosition().x < 0) || (Balls[i].circles.getPosition().x > 760))
             {
-                Vector2f delta1 = Balls[fi].speed - Balls[si].speed;
-                Vector2f delta2 = Balls[si].speed - Balls[fi].speed;
-                Vector2f delta11 = Balls[fi].circles.getPosition() - Balls[si].circles.getPosition();
-                Vector2f delta22 = Balls[si].circles.getPosition() - Balls[fi].circles.getPosition();
-                float dot1 = delta1.x * delta11.x + delta1.y * delta11.y;
-                float dot2 = delta2.x * delta22.x + delta2.y * delta22.y;
-                Balls[fi].speed = Balls[fi].speed - (dot1 / (distance * distance)) * delta11;
-                Balls[si].speed = Balls[si].speed - (dot2 / (distance * distance)) * delta22;
+                Balls[i].speed.x = -Balls[i].speed.x;
+            }
+            if ((Balls[i].circles.getPosition().y < 0) || (Balls[i].circles.getPosition().y > 560))
+            {
+                Balls[i].speed.y = -Balls[i].speed.y;
+            }
+            Balls[i].circles.setPosition(Balls[i].circles.getPosition() + Balls[i].speed * dt);
+        }
+        for (size_t fi = 0; fi < Balls.size(); ++fi)
+        {
+            for (size_t si = fi + 1; si < Balls.size(); ++si)
+            {
+                const Vector2f deltaPos = Balls[fi].circles.getPosition() - Balls[si].circles.getPosition();
+                float distance = hypotf(deltaPos.x, deltaPos.y);
+                if (distance <= 40)
+                {
+                    Vector2f delta1 = Balls[fi].speed - Balls[si].speed;
+                    Vector2f delta2 = Balls[si].speed - Balls[fi].speed;
+                    Vector2f delta11 = Balls[fi].circles.getPosition() - Balls[si].circles.getPosition();
+                    Vector2f delta22 = Balls[si].circles.getPosition() - Balls[fi].circles.getPosition();
+                    float dot1 = delta1.x * delta11.x + delta1.y * delta11.y;
+                    float dot2 = delta2.x * delta22.x + delta2.y * delta22.y;
+                    Balls[fi].speed = Balls[fi].speed - (dot1 / (distance * distance)) * delta11;
+                    Balls[si].speed = Balls[si].speed - (dot2 / (distance * distance)) * delta22;
+                }
             }
         }
     }

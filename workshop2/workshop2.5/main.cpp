@@ -1,62 +1,93 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <vector>
+#include <random>
+#include <ctime>
 #include <cmath>
+#include <cassert>
 
-void onMousePressed(const sf::Event::MouseButtonEvent &event, std::vector<sf::CircleShape> &circles, std::vector<sf::Vector2f> &speed)
+using namespace std;
+using namespace sf;
+
+struct Drawing
 {
-    circles.push_back(sf::CircleShape(20.f));
-    speed.push_back({float(rand() % 100), float(rand() % 100)});
-    circles.back().setPosition({(float(event.x) - 20),
-                                (float(event.y) - 20)});
-    circles.back().setFillColor(sf::Color(float(rand() % 254), float(rand() % 254), float(rand() % 254)));
+    vector<CircleShape> circles;
+    vector<Vector2f> speed;
+};
+
+struct PRNG
+{
+    mt19937 engine;
+};
+
+void initGenerator(PRNG &generator)
+{
+    const unsigned seed = unsigned(time(nullptr));
+    generator.engine.seed(seed);
 }
-void update(std::vector<sf::CircleShape> &circles, std::vector<sf::Vector2f> &speed, sf::Clock &clock)
+
+float getRandomFloat(PRNG &generator, float minValue, float maxValue)
 {
-    float dt = clock.restart().asSeconds();
-    for (size_t i = 0; i < circles.size(); ++i)
-    {
-        if ((circles[i].getPosition().x > 760) || (circles[i].getPosition().x < 0))
-        {
-            speed[i].x = -speed[i].x;
-        }
-        if ((circles[i].getPosition().y > 560) || (circles[i].getPosition().y < 0))
-        {
-            speed[i].y = -speed[i].y;
-        }
-        for (size_t fi = 0; fi < circles.size(); ++fi)
-        {
-            for (size_t si = fi + 1; si < circles.size(); ++si)
-            {
-                const sf::Vector2f deltaPos = circles[fi].getPosition() - circles[si].getPosition();
-                float distance = std::hypotf(deltaPos.x, deltaPos.y);
-                if (distance <= 39)
-                {
-                    sf::Vector2f delta1 = speed[fi] - speed[si];
-                    sf::Vector2f delta2 = speed[si] - speed[fi];
-                    sf::Vector2f delta11 = circles[fi].getPosition() - circles[si].getPosition();
-                    sf::Vector2f delta22 = circles[si].getPosition() - circles[fi].getPosition();
-                    float dot1 = delta1.x * delta11.x + delta1.y * delta11.y;
-                    float dot2 = delta2.x * delta22.x + delta2.y * delta22.y;
-                    speed[fi] = speed[fi] - (dot1 / (distance * distance)) * delta11;
-                    speed[si] = speed[si] - (dot2 / (distance * distance)) * delta22;
-                }
-            }
-        }
-        circles[i].setPosition(circles[i].getPosition() + speed[i] * dt);
-    }
+    assert(minValue < maxValue);
+    uniform_real_distribution<float> distribution(minValue, maxValue);
+    return distribution(generator.engine);
 }
-void pollEvents(sf::RenderWindow &window, std::vector<sf::CircleShape> &circles, std::vector<sf::Vector2f> &speed)
+
+Vector2f getRandomPosition(PRNG &generator)
 {
-    sf::Event event;
+    assert(0 < 500);
+    uniform_real_distribution<float> distributionX(0, 700);
+    float posX = distributionX(generator.engine);
+    assert(0 < 500);
+    uniform_real_distribution<float> distributionY(0, 500);
+    float posY = distributionY(generator.engine);
+    return (Vector2f{posX, posY});
+}
+
+Color getRandomColor(PRNG &generator)
+{
+    int color[8][3] = {{51, 255, 153},
+                       {255, 204, 0},
+                       {204, 255, 255},
+                       {102, 0, 255},
+                       {102, 204, 0},
+                       {204, 0, 0},
+                       {204, 204, 255},
+                       {255, 204, 204}};
+    uniform_real_distribution<float> firstColor(0, 7);
+    int first = firstColor(generator.engine);
+
+    uniform_real_distribution<float> secondColor(0, 7);
+    int second = secondColor(generator.engine);
+
+    int newColorR = (color[first][1] + color[second][1]) * 0.5;
+    int newColorG = (color[first][2] + color[second][2]) * 0.5;
+    int newColorB = (color[first][3] + color[second][3]) * 0.5;
+    return (Color(newColorR, newColorG, newColorB));
+}
+
+void onMousePressed(const Event::MouseButtonEvent &event, Drawing &Balls, PRNG &generator)
+{
+
+    Balls.circles.push_back(CircleShape(20.f));
+    Balls.circles.back().setPosition({(float(event.x) - 20),
+                                      (float(event.y) - 20)});
+    Balls.circles.back().setFillColor(getRandomColor(generator));
+    Balls.speed.push_back(Vector2f{getRandomFloat(generator, 0, 100), getRandomFloat(generator, 0, 100)});
+}
+
+void pollEvents(RenderWindow &window, Drawing &Balls, PRNG &generator)
+{
+    Event event;
     while (window.pollEvent(event))
     {
         switch (event.type)
         {
-        case sf::Event::Closed:
+        case Event::Closed:
             window.close();
             break;
-        case sf::Event::MouseButtonPressed:
-            onMousePressed(event.mouseButton, circles, speed);
+        case Event::MouseButtonPressed:
+            onMousePressed(event.mouseButton, Balls, generator);
             break;
         default:
             break;
@@ -64,35 +95,68 @@ void pollEvents(sf::RenderWindow &window, std::vector<sf::CircleShape> &circles,
     }
 }
 
-void redrawFrame(sf::RenderWindow &window, std::vector<sf::CircleShape> &circles)
+void update(Drawing &Balls, Clock &clock)
 {
-    window.clear(sf::Color(255, 255, 255));
-    for (size_t i = 0; i < circles.size(); ++i)
+    float dt = clock.restart().asSeconds();
+    for (size_t i = 0; i < Balls.circles.size(); ++i)
     {
-        window.draw(circles.at(i));
+        if ((Balls.circles[i].getPosition().x < 0) || (Balls.circles[i].getPosition().x > 760))
+        {
+            Balls.speed[i].x = -Balls.speed[i].x;
+        }
+        if ((Balls.circles[i].getPosition().y < 0) || (Balls.circles[i].getPosition().y > 560))
+        {
+            Balls.speed[i].y = -Balls.speed[i].y;
+        }
+        Balls.circles[i].setPosition(Balls.circles[i].getPosition() + Balls.speed[i] * dt);
+    }
+    for (size_t fi = 0; fi < Balls.circles.size(); ++fi)
+    {
+        for (size_t si = fi + 1; si < Balls.circles.size(); ++si)
+        {
+            const Vector2f deltaPos = Balls.circles[fi].getPosition() - Balls.circles[si].getPosition();
+            float distance = hypotf(deltaPos.x, deltaPos.y);
+            if (distance <= 40)
+            {
+                Vector2f delta1 = Balls.speed[fi] - Balls.speed[si];
+                Vector2f delta2 = Balls.speed[si] - Balls.speed[fi];
+                Vector2f delta11 = Balls.circles[fi].getPosition() - Balls.circles[si].getPosition();
+                Vector2f delta22 = Balls.circles[si].getPosition() - Balls.circles[fi].getPosition();
+                float dot1 = delta1.x * delta11.x + delta1.y * delta11.y;
+                float dot2 = delta2.x * delta22.x + delta2.y * delta22.y;
+                Balls.speed[fi] = Balls.speed[fi] - (dot1 / (distance * distance)) * delta11;
+                Balls.speed[si] = Balls.speed[si] - (dot2 / (distance * distance)) * delta22;
+            }
+        }
+    }
+}
+void redrawFrame(RenderWindow &window, Drawing &Balls)
+{
+    window.clear(Color::Black);
+    for (size_t gi = 0; gi < Balls.circles.size(); ++gi)
+    {
+        window.draw(Balls.circles[gi]);
     }
     window.display();
 }
-
 int main()
 {
     constexpr unsigned WINDOW_WIDTH = 800;
     constexpr unsigned WINDOW_HEIGHT = 600;
 
-    sf::ContextSettings settings;
+    ContextSettings settings;
     settings.antialiasingLevel = 8;
-    sf::RenderWindow window(
-        sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
-        "BALLS", sf::Style::Default, settings);
-    sf::Vector2f mousePosition;
-    sf::Clock clock;
-    std::vector<sf::CircleShape> circles;
-    std::vector<sf::Vector2f> speed;
-
+    RenderWindow window(
+        VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
+        "Balls", Style::Default, settings);
+    Clock clock;
+    PRNG generator;
+    initGenerator(generator);
+    Drawing Balls;
     while (window.isOpen())
     {
-        pollEvents(window, circles, speed);
-        update(circles, speed, clock);
-        redrawFrame(window, circles);
+        pollEvents(window, Balls, generator);
+        update(Balls, clock);
+        redrawFrame(window, Balls);
     }
 }

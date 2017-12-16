@@ -1,95 +1,86 @@
-#include <SFML\Graphics.hpp>
+#include <SFML/Graphics.hpp>
 #include <cmath>
 #include <iostream>
 
 using namespace std;
+using namespace sf;
 
 struct Eye
 {
-    sf::ConvexShape white; // Белый зразок
-    sf::ConvexShape black; // Черный зразок
-    sf::Vector2f position;
+    ConvexShape white;
+    ConvexShape black;
+    Vector2f position;
     float rotation = 0;
 };
 
 // Переводит полярные координаты в декартовы
-sf::Vector2f toEuclidean(float x, float y, float angle)
+Vector2f toEuclidean(float radiusX, float radiusY, float angle)
 {
-    return {x * cos(angle), y * sin(angle)};
+    return {radiusX * cos(angle), radiusY * sin(angle)};
 }
 
-// Обновляет позиции и повороты частей глаз
-void updateEyeElements(Eye &lEye, Eye &rEye)
+// Обновляет состояние глаза
+void updateEye(Eye &eye)
 {
-    const sf::Vector2f rotation = {40.f, 60.f};
-    const sf::Vector2f whitelEyeOffset = toEuclidean(rotation.x, rotation.y, lEye.rotation);
-    const sf::Vector2f whiterEyeOffset = toEuclidean(rotation.x, rotation.y, rEye.rotation);
-    lEye.black.setPosition(lEye.position + whitelEyeOffset);
-    rEye.black.setPosition(rEye.position + whiterEyeOffset);
+    const Vector2f whiteOffset = toEuclidean(20, 40, eye.rotation);
+    eye.white.setPosition(eye.position + whiteOffset);
+    eye.black.setPosition(eye.position);
 }
-// Инициализирует глаза
-void initEye(Eye &lEye, Eye &rEye)
+
+// Инициализирует зрачок
+void initWhite(Eye &eye)
 {
-    lEye.position = {300, 350};
-    rEye.position = {500, 350};
-    sf::Vector2f whiteRadius = {90.f, 170.f};
-    sf::Vector2f blackRadius = {20.f, 30.f};
-    float pointCount = 100;
+    eye.white.setFillColor(Color(0, 0, 0));
 
-    lEye.white.setFillColor(sf::Color(255, 255, 255));
-    lEye.white.setPointCount(pointCount);
-    lEye.white.setPosition(lEye.position);
-    rEye.white.setFillColor(sf::Color(255, 255, 255));
-    rEye.white.setPointCount(pointCount);
-    rEye.white.setPosition(rEye.position);
-
-    lEye.black.setPointCount(pointCount);
-    lEye.black.setFillColor(sf::Color(0, 0, 0));
-    lEye.black.setPosition(lEye.position);
-    rEye.black.setPointCount(pointCount);
-    rEye.black.setFillColor(sf::Color(0, 0, 0));
-    rEye.black.setPosition(rEye.position);
-    for (float pointEye = 0; pointCount > pointEye; ++pointEye)
+    constexpr float pointCount = 200;
+    Vector2f ellipseRadius = {15.f, 20.f};
+    eye.white.setPointCount(pointCount);
+    for (int pointNo = 0; pointNo < pointCount; ++pointNo)
     {
-        float angle = float(2 * M_PI * pointEye) / float(pointCount);
-        sf::Vector2f point = {
-            whiteRadius.x * sin(angle),
-            whiteRadius.y * cos(angle)};
-        lEye.white.setPoint(pointEye, point);
-        rEye.white.setPoint(pointEye, point);
+        float angle = float(2 * M_PI * pointNo) / float(pointCount);
+        Vector2f point = {ellipseRadius.x * cos(angle), ellipseRadius.y * sin(angle)};
+        eye.white.setPoint(pointNo, point);
     }
+}
 
-    for (float pointEye = 0; pointCount > pointEye; ++pointEye)
+// Инициализирует глаз
+void initEye(Eye &eye, const float x, const float y)
+{
+    eye.position = {x, y};
+
+    eye.black.setFillColor(Color(0xFF, 0xFF, 0xFF));
+
+    constexpr int pointCount = 200;
+    Vector2f ellipseRadius = {50.f, 100.f};
+    eye.black.setPointCount(pointCount);
+    for (int pointNo = 0; pointNo < pointCount; ++pointNo)
     {
-        float angle = float(2 * M_PI * pointEye) / float(pointCount);
-        sf::Vector2f point = {
-            blackRadius.x * sin(angle),
-            blackRadius.y * cos(angle)};
-        lEye.black.setPoint(pointEye, point);
-        rEye.black.setPoint(pointEye, point);
+        float angle = float(2 * M_PI * pointNo) / float(pointCount);
+        Vector2f point = {ellipseRadius.x * cos(angle), ellipseRadius.y * sin(angle)};
+        eye.black.setPoint(pointNo, point);
     }
-
-    updateEyeElements(lEye, rEye);
+    initWhite(eye);
+    updateEye(eye);
 }
 
 // Обрабатывает событие MouseMove, обновляя позицию мыши
-void onMouseMove(const sf::Event::MouseMoveEvent &event, sf::Vector2f &mousePosition)
+void onMouseMove(const Event::MouseMoveEvent &event, Vector2f &mousePosition)
 {
     mousePosition = {float(event.x), float(event.y)};
 }
 
 // Опрашивает и обрабатывает доступные события в цикле.
-void pollEvents(sf::RenderWindow &window, sf::Vector2f &mousePosition)
+void pollEvents(RenderWindow &window, Vector2f &mousePosition)
 {
-    sf::Event event;
+    Event event;
     while (window.pollEvent(event))
     {
         switch (event.type)
         {
-        case sf::Event::Closed:
+        case Event::Closed:
             window.close();
             break;
-        case sf::Event::MouseMoved:
+        case Event::MouseMoved:
             onMouseMove(event.mouseMove, mousePosition);
             break;
         default:
@@ -98,24 +89,26 @@ void pollEvents(sf::RenderWindow &window, sf::Vector2f &mousePosition)
     }
 }
 
-// Обновляет фигуру, указывающую на мышь
-void update(const sf::Vector2f &mousePosition, Eye &lEye, Eye &rEye)
+// Обновляет зрачки, указывающие на мышь
+void update(const Vector2f &mousePosition, Eye &LeftEye, Eye &RightEye)
 {
-    const sf::Vector2f lEyedelta = mousePosition - lEye.position;
-    lEye.rotation = atan2(lEyedelta.y, lEyedelta.x);
-    const sf::Vector2f rEyedelta = mousePosition - rEye.position;
-    rEye.rotation = atan2(rEyedelta.y, rEyedelta.x);
-    updateEyeElements(lEye, rEye);
+    Vector2f delta = mousePosition - LeftEye.position;
+    LeftEye.rotation = atan2(delta.y, delta.x);
+    updateEye(LeftEye);
+
+    delta = mousePosition - RightEye.position;
+    RightEye.rotation = atan2(delta.y, delta.x);
+    updateEye(RightEye);
 }
 
 // Рисует и выводит один кадр
-void redrawFrame(sf::RenderWindow &window, Eye &lEye, Eye &rEye)
+void redrawFrame(RenderWindow &window, Eye &LeftEye, Eye &RightEye)
 {
     window.clear();
-    window.draw(lEye.white);
-    window.draw(lEye.black);
-    window.draw(rEye.white);
-    window.draw(rEye.black);
+    window.draw(LeftEye.black);
+    window.draw(LeftEye.white);
+    window.draw(RightEye.black);
+    window.draw(RightEye.white);
     window.display();
 }
 
@@ -125,21 +118,23 @@ int main()
     constexpr unsigned WINDOW_WIDTH = 800;
     constexpr unsigned WINDOW_HEIGHT = 600;
 
-    sf::ContextSettings settings;
+    ContextSettings settings;
     settings.antialiasingLevel = 8;
-    sf::RenderWindow window(
-        sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
-        "Eye follows mouse", sf::Style::Default, settings);
+    RenderWindow window(
+        VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
+        "Eye follows mouse", Style::Default, settings);
 
-    Eye lEye;
-    Eye rEye;
-    sf::Vector2f mousePosition;
+    Eye LeftEye;
+    Eye RightEye;
 
-    initEye(lEye, rEye);
+    Vector2f mousePosition;
+
+    initEye(LeftEye, 300, 300);
+    initEye(RightEye, 450, 300);
     while (window.isOpen())
     {
         pollEvents(window, mousePosition);
-        update(mousePosition, lEye, rEye);
-        redrawFrame(window, lEye, rEye);
+        update(mousePosition, LeftEye, RightEye);
+        redrawFrame(window, LeftEye, RightEye);
     }
 }

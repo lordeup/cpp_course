@@ -6,42 +6,45 @@
 #include <cmath>
 #include <cassert>
 
+using namespace std;
+using namespace sf;
+
 struct Drawing
 {
-    std::vector<sf::CircleShape> circles;
-    std::vector<sf::Vector2f> speed;
+    vector<CircleShape> circles;
+    vector<Vector2f> speed;
 };
 
 struct PRNG
 {
-    std::mt19937 engine;
+    mt19937 engine;
 };
 
 void initGenerator(PRNG &generator)
 {
-    const unsigned seed = unsigned(std::time(nullptr));
+    const unsigned seed = unsigned(time(nullptr));
     generator.engine.seed(seed);
 }
 
 float getRandomFloat(PRNG &generator, float minValue, float maxValue)
 {
     assert(minValue < maxValue);
-    std::uniform_real_distribution<float> distribution(minValue, maxValue);
+    uniform_real_distribution<float> distribution(minValue, maxValue);
     return distribution(generator.engine);
 }
 
-sf::Vector2f getRandomPosition(PRNG &generator)
+Vector2f getRandomPosition(PRNG &generator)
 {
     assert(0 < 500);
-    std::uniform_real_distribution<float> distributionX(0, 700);
+    uniform_real_distribution<float> distributionX(0, 700);
     float posX = distributionX(generator.engine);
     assert(0 < 500);
-    std::uniform_real_distribution<float> distributionY(0, 500);
+    uniform_real_distribution<float> distributionY(0, 500);
     float posY = distributionY(generator.engine);
-    return (sf::Vector2f{posX, posY});
+    return (Vector2f{posX, posY});
 }
 
-sf::Color getRandomColor(PRNG &generator)
+Color getRandomColor(PRNG &generator)
 {
     int color[8][3] = {{51, 255, 153},
                        {255, 204, 0},
@@ -51,16 +54,16 @@ sf::Color getRandomColor(PRNG &generator)
                        {204, 0, 0},
                        {204, 204, 255},
                        {255, 204, 204}};
-    std::uniform_real_distribution<float> firstColor(0, 7);
+    uniform_real_distribution<float> firstColor(0, 7);
     int first = firstColor(generator.engine);
 
-    std::uniform_real_distribution<float> secondColor(0, 7);
+    uniform_real_distribution<float> secondColor(0, 7);
     int second = secondColor(generator.engine);
 
     int newColorR = (color[first][1] + color[second][1]) * 0.5;
     int newColorG = (color[first][2] + color[second][2]) * 0.5;
     int newColorB = (color[first][3] + color[second][3]) * 0.5;
-    return (sf::Color(newColorR, newColorG, newColorB));
+    return (Color(newColorR, newColorG, newColorB));
 }
 void ballsCollision(Drawing &Balls)
 {
@@ -68,14 +71,14 @@ void ballsCollision(Drawing &Balls)
     {
         for (size_t si = fi + 1; si < Balls.circles.size(); ++si)
         {
-            const sf::Vector2f deltaPos = Balls.circles[fi].getPosition() - Balls.circles[si].getPosition();
-            float distance = std::hypotf(deltaPos.x, deltaPos.y);
+            const Vector2f deltaPos = Balls.circles[fi].getPosition() - Balls.circles[si].getPosition();
+            float distance = hypotf(deltaPos.x, deltaPos.y);
             if (distance <= 40)
             {
-                sf::Vector2f delta1 = Balls.speed[fi] - Balls.speed[si];
-                sf::Vector2f delta2 = Balls.speed[si] - Balls.speed[fi];
-                sf::Vector2f delta11 = Balls.circles[fi].getPosition() - Balls.circles[si].getPosition();
-                sf::Vector2f delta22 = Balls.circles[si].getPosition() - Balls.circles[fi].getPosition();
+                Vector2f delta1 = Balls.speed[fi] - Balls.speed[si];
+                Vector2f delta2 = Balls.speed[si] - Balls.speed[fi];
+                Vector2f delta11 = Balls.circles[fi].getPosition() - Balls.circles[si].getPosition();
+                Vector2f delta22 = Balls.circles[si].getPosition() - Balls.circles[fi].getPosition();
                 float dot1 = delta1.x * delta11.x + delta1.y * delta11.y;
                 float dot2 = delta2.x * delta22.x + delta2.y * delta22.y;
                 Balls.speed[fi] = Balls.speed[fi] - (dot1 / (distance * distance)) * delta11;
@@ -84,14 +87,14 @@ void ballsCollision(Drawing &Balls)
         }
     }
 }
-void onMousePressed(const sf::Event::MouseButtonEvent &event, Drawing &Balls, PRNG &generator)
+void onMousePressed(const Event::MouseButtonEvent &event, Drawing &Balls, PRNG &generator)
 {
-    sf::Vector2f mousePos = {(float(event.x)), (float(event.y))};
+    Vector2f mousePos = {(float(event.x)), (float(event.y))};
     bool notInCircle = true;
     for (size_t i = 0; i < Balls.circles.size(); ++i)
     {
-        sf::Vector2f delta = mousePos - Balls.circles[i].getPosition();
-        float distanceBetween = std::hypot(delta.x, delta.y);
+        Vector2f delta = mousePos - Balls.circles[i].getPosition();
+        float distanceBetween = hypot(delta.x, delta.y);
         if (distanceBetween < 50)
         {
             notInCircle = false;
@@ -100,25 +103,25 @@ void onMousePressed(const sf::Event::MouseButtonEvent &event, Drawing &Balls, PR
     }
     if (notInCircle)
     {
-        Balls.circles.push_back(sf::CircleShape(20.f));
+        Balls.circles.push_back(CircleShape(20.f));
         Balls.circles.back().setPosition({(float(event.x) - 20),
                                           (float(event.y) - 20)});
         Balls.circles.back().setFillColor(getRandomColor(generator));
-        Balls.speed.push_back(sf::Vector2f{getRandomFloat(generator, 0, 100), getRandomFloat(generator, 0, 100)});
+        Balls.speed.push_back(Vector2f{getRandomFloat(generator, 0, 100), getRandomFloat(generator, 0, 100)});
     }
 }
 
-void pollEvents(sf::RenderWindow &window, Drawing &Balls, PRNG &generator)
+void pollEvents(RenderWindow &window, Drawing &Balls, PRNG &generator)
 {
-    sf::Event event;
+    Event event;
     while (window.pollEvent(event))
     {
         switch (event.type)
         {
-        case sf::Event::Closed:
+        case Event::Closed:
             window.close();
             break;
-        case sf::Event::MouseButtonPressed:
+        case Event::MouseButtonPressed:
             onMousePressed(event.mouseButton, Balls, generator);
             break;
         default:
@@ -127,7 +130,7 @@ void pollEvents(sf::RenderWindow &window, Drawing &Balls, PRNG &generator)
     }
 }
 
-void update(Drawing &Balls, sf::Clock &clock)
+void update(Drawing &Balls, Clock &clock)
 {
     float dt = clock.restart().asSeconds();
     for (size_t i = 0; i < Balls.circles.size(); ++i)
@@ -144,9 +147,9 @@ void update(Drawing &Balls, sf::Clock &clock)
     }
     ballsCollision(Balls);
 }
-void redrawFrame(sf::RenderWindow &window, Drawing &Balls)
+void redrawFrame(RenderWindow &window, Drawing &Balls)
 {
-    window.clear(sf::Color::Black);
+    window.clear(Color::Black);
     for (size_t gi = 0; gi < Balls.circles.size(); ++gi)
     {
         window.draw(Balls.circles[gi]);
@@ -158,12 +161,12 @@ int main()
     constexpr unsigned WINDOW_WIDTH = 800;
     constexpr unsigned WINDOW_HEIGHT = 600;
 
-    sf::ContextSettings settings;
+    ContextSettings settings;
     settings.antialiasingLevel = 8;
-    sf::RenderWindow window(
-        sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
-        "Balls", sf::Style::Default, settings);
-    sf::Clock clock;
+    RenderWindow window(
+        VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
+        "Balls", Style::Default, settings);
+    Clock clock;
     PRNG generator;
     initGenerator(generator);
     Drawing Balls;

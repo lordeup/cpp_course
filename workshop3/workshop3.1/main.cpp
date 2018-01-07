@@ -1,3 +1,4 @@
+#include "ball.hpp"
 #include "constants.hpp"
 #include <SFML/Graphics.hpp>
 #include <string>
